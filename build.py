@@ -32,12 +32,12 @@ SETS = [
         ],
     },
     {
-        "id": "kestrel",
-        "title": "Kestrel Aviation",
-        "note": "Fictional company — design sample",
+        "id": "lawfirm",
+        "title": "Krasniqi & Dedaj",
+        "note": "Fictional firm — design sample",
         "variants": [
-            ("kestrel-flight-strip.html", "Flight Strip"),
-            ("kestrel-compact.html", "Compact"),
+            ("lawfirm-letterhead.html", "Letterhead"),
+            ("lawfirm-compact.html", "Compact"),
         ],
     },
 ]

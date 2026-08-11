@@ -16,20 +16,18 @@ Georgia, rendered as live text in a coloured table cell rather than an image.
 | `signature-b-minimal.html` | Single-column, terracotta accent |
 | `signature-c-card.html` | Bordered card, teal left bar |
 
-**Kestrel Aviation** — a fictional company, used as a design sample. The top
-band reads like a flight strip: registration, base and offset set in Courier
-New, where monospace aligns the data rather than decorating it.
+**Krasniqi & Dedaj** — a fictional law firm, used as a design sample. The double rule is the letterpress convention for legal stationery, and the confidentiality notice every firm actually carries is treated as structure rather than an afterthought.
 
 | File | Style |
 |---|---|
-| `kestrel-flight-strip.html` | Ink band, amber rule, monospace contact block |
-| `kestrel-compact.html` | No background fills — stays quiet in a reply chain |
+| `lawfirm-letterhead.html` | Crest, double rule, confidentiality notice |
+| `lawfirm-compact.html` | Reply-chain version, brass hairline column |
 
 ## Layout
 
 ```
 src/<set>/          sources, with __ASSET:<file>__ tokens
-assets/             linkedin.png, kestrel.png — generated, not drawn
+assets/             linkedin.png, lawfirm.png — generated, not drawn
 tools/              PNG generators (zlib, no image library)
 page.template.html
 build.py            resolves assets, generates the page
