@@ -1,77 +1,95 @@
-# Email Signature — Besnik Qunaku
+# HTML Email Signatures — Besnik Qunaku
 
-Hand-coded HTML email signatures. No generator, no framework, no web fonts.
-Built to render in Outlook Classic (Windows/Word engine), Outlook New, Gmail
-(web + iOS/Android), Apple Mail and Thunderbird.
+Hand-coded, table-based email signatures. No generator, no framework, no web
+fonts, no `@font-face`. Written against the constraints of the clients they have
+to survive — principally Outlook Classic, which renders through Microsoft Word
+rather than a browser engine.
 
-**Live preview:** https://besnikqunaku.github.io/email-signature/
+**Live showcase:** https://besnikqunaku.github.io/email-signature/
+
+## Sets
+
+**Personal** — no logo, so identity is carried by a typographic monogram set in
+Georgia, rendered as live text in a coloured table cell rather than an image.
+
+| File | Style |
+|---|---|
+| `signature-a-monogram-tile.html` | Charcoal tile, gold accent |
+| `signature-b-minimal.html` | Single-column editorial, terracotta accent |
+| `signature-c-card.html` | Bordered card, teal left bar |
+
+**Cohax L.L.C** — concept work for a former employer, built to their existing
+brand (Manrope, navy `#0C111D`, electric blue `#028AFB`, taken from cohax.co).
+Not an official Cohax asset.
+
+| File | Style |
+|---|---|
+| `cohax-corporate.html` | Brand band, labelled contact rows, footer strip |
+| `cohax-compact.html` | No background fills — sits cleanly inside a reply chain |
 
 ## Layout
 
 ```
-src/          source signatures (contain the __LI__ icon token)
-assets/       linkedin.png — 96px, generated procedurally, 800 bytes
-dist/         build output: copy-paste ready signatures + preview.html
-build.py      substitutes the icon and generates the preview page
+src/personal/     source signatures (contain the __LI__ icon token)
+src/cohax/
+assets/           linkedin.png — 96px, 800 bytes, generated procedurally
+tools/            make-icon.py — writes the PNG directly via zlib
+page.template.html
+build.py          substitutes the icon, generates the showcase page
+dist/             build output: copy-paste ready signatures + preview.html
+index.html        generated — the GitHub Pages landing page
 ```
 
 ## Build
 
 ```bash
 python3 build.py
-open dist/preview.html
+open index.html
 ```
 
-`dist/preview.html` renders all three variants on a white background with a
-one-click **Copy signature** button and install steps for each client.
+## Compatibility
 
-## Variants
+| Client | Engine | Status |
+|---|---|---|
+| Gmail — web | Blink | Tested |
+| Gmail — iOS / Android | WebKit / Blink | Tested |
+| Apple Mail — macOS | WebKit | Tested |
+| Outlook New / Outlook.com | WebView2 / Blink | Tested |
+| Outlook Classic — Windows | Microsoft Word | **Not tested — no Windows machine** |
 
-| File | Style |
-|---|---|
-| `signature-a-monogram-tile.html` | Charcoal monogram tile, gold accent |
-| `signature-b-minimal.html` | Single-column editorial, terracotta accent |
-| `signature-c-card.html` | Bordered card, teal left bar |
+Outlook *for Mac* is not a substitute for Outlook Classic: it renders through
+WebKit, so passing there would be no evidence about the Word engine. The markup
+was instead written against the Word engine's documented constraints from the
+outset — see the full constraint table on the
+[showcase page](https://besnikqunaku.github.io/email-signature/).
 
-## The LinkedIn icon
-
-The icon is served from GitHub Pages:
-
-```
-https://besnikqunaku.github.io/email-signature/assets/linkedin.png
-```
-
-It is generated procedurally by `tools/make-icon.py`, which writes the PNG
-directly with `zlib` — no image library, no design tool. The rounded tile and
-the `in` glyph are drawn as geometry and rasterised with 4× supersampling for
-antialiased edges. Output is 96px, 800 bytes, displayed at 18px for a crisp 4×
-retina result.
-
-An absolute `https` URL is **required**: `data:` URIs are stripped by the Gmail
-signature editor and cannot be rendered by Outlook Classic at all. To embed the
-icon as base64 instead (self-contained files, but Gmail and Outlook Classic will
-drop it), set `HOSTED_ICON_URL = None` in `build.py` and rebuild.
-
-Because images can be blocked by the recipient, a text "LinkedIn" link always
-sits beside the icon and the image carries `alt="LinkedIn"`.
-
-## Techniques used
+## Techniques
 
 - Nested tables only, `role="presentation"`, `cellpadding/cellspacing/border=0`,
   `border-collapse:collapse`
 - `mso-line-height-rule:exactly` on every text cell; `mso-table-lspace/rspace:0pt`
-  on every table — removes Outlook's phantom spacing
-- Dividers and accent bars are `bgcolor` table cells, not CSS borders
-- Monogram is live text in a colored cell, not an image — survives images-off
-- Web-safe stacks only: Georgia for the monogram, Segoe UI/Roboto/Helvetica/Arial
-  for body text
-- Links double-wrapped in `<a style>` + inner `<span style>` to stop Outlook and
-  Gmail forcing blue underline
-- `mailto:`, `tel:` (E.164, no spaces) and a Google Maps link on the address
-- Widths declared as both HTML attributes and CSS
+  on every table
+- Rules and accent bars are `bgcolor` table cells, not CSS borders
+- Monograms and wordmarks are live text, not images — they survive images-off
+- Links double-wrapped in `<a style>` + inner `<span style>` so Outlook and Gmail
+  cannot force blue underline
+- `mailto:`, `tel:` in E.164, Google Maps links on addresses
+- Widths declared as both HTML attributes and CSS, integers only
+- Largest signature is under 7 KB, well clear of Gmail's ~102 KB clipping
+
+## The LinkedIn icon
+
+Served from `assets/linkedin.png` and generated by `tools/make-icon.py`, which
+writes the PNG directly with `zlib` — no image library, no design tool. The
+rounded tile and `in` glyph are drawn as geometry and rasterised with 4×
+supersampling. 96px, 800 bytes, displayed at 16–18px.
+
+An absolute `https` URL is required: `data:` URIs are stripped by the Gmail
+signature editor and cannot be rendered by Outlook Classic at all.
 
 ## Status
 
-- [x] Contact details final
+- [x] Personal set — installed and in use
+- [x] Cohax concept set
 - [x] Icon hosted on GitHub Pages
-- [ ] Screenshot set: Outlook Classic, Outlook New, Gmail, iOS Mail
+- [ ] Outlook Classic verification (needs Windows or a Litmus account)
