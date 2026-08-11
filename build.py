@@ -2,131 +2,96 @@
 """
 Build the email signatures.
 
-Reads src/<set>/*.html, substitutes __LI__ with the LinkedIn icon source, and
-writes:
+Reads src/<set>/*.html, resolves __ASSET:<file>__ tokens to hosted image URLs,
+and writes:
 
     dist/<set>/*.html   copy-paste ready signatures
-    dist/preview.html   showcase page (copy buttons + compatibility notes)
+    dist/preview.html   the showcase page
     index.html          same page at repo root, for GitHub Pages
 
 Run:  python3 build.py
 """
-import base64
 import pathlib
 import re
 
 ROOT = pathlib.Path(__file__).parent
-SRC, DIST, ASSETS = ROOT / "src", ROOT / "dist", ROOT / "assets"
+SRC, DIST = ROOT / "src", ROOT / "dist"
 
-# An absolute https URL is required: `data:` URIs are stripped by the Gmail
+# Absolute https URLs are required. `data:` URIs are stripped by the Gmail
 # signature editor and cannot be rendered by Outlook Classic at all.
-# Set to None to embed the icon as base64 instead.
-HOSTED_ICON_URL = "https://besnikqunaku.github.io/email-signature/assets/linkedin.png"
+ASSET_BASE = "https://besnikqunaku.github.io/email-signature/assets/"
 
 SETS = [
     {
         "id": "personal",
         "title": "Personal",
-        "lede": "Signatures for my own correspondence. No logo, so identity is "
-                "carried by a typographic monogram set in Georgia — live text "
-                "in a coloured table cell, not an image, so it survives with "
-                "images disabled.",
         "variants": [
-            ("signature-a-monogram-tile.html", "Monogram Tile",
-             "Charcoal tile, gold accent. Strongest identity mark."),
-            ("signature-b-minimal.html", "Minimal Editorial",
-             "Single column — structurally incapable of breaking on narrow screens."),
-            ("signature-c-card.html", "Accent Card",
-             "Bordered card with a solid left bar."),
+            ("signature-a-monogram-tile.html", "Monogram Tile"),
+            ("signature-b-minimal.html", "Minimal"),
+            ("signature-c-card.html", "Accent Card"),
         ],
     },
     {
-        "id": "cohax",
-        "title": "Cohax L.L.C",
-        "lede": "Concept work for a former employer, built to their existing brand: "
-                "Manrope, navy <code>#0C111D</code>, electric blue <code>#028AFB</code>, "
-                "all taken from cohax.co. The wordmark is live text rather than a "
-                "logo image, for the same images-off reason.",
-        "badge": "Concept — not an official Cohax asset",
+        "id": "kestrel",
+        "title": "Kestrel Aviation",
+        "note": "Fictional company — design sample",
         "variants": [
-            ("cohax-corporate.html", "Corporate",
-             "Brand band, labelled contact rows, footer strip. The full-dress version."),
-            ("cohax-compact.html", "Compact",
-             "No background fills, so it sits cleanly inside a reply chain."),
+            ("kestrel-flight-strip.html", "Flight Strip"),
+            ("kestrel-compact.html", "Compact"),
         ],
     },
 ]
 
-
-def icon_src() -> str:
-    if HOSTED_ICON_URL:
-        return HOSTED_ICON_URL
-    png = (ASSETS / "linkedin.png").read_bytes()
-    return "data:image/png;base64," + base64.b64encode(png).decode()
+ASSET_RE = re.compile(r"__ASSET:([A-Za-z0-9._-]+)__")
 
 
 def strip_leading_comment(html: str) -> str:
     return re.sub(r"^\s*<!--.*?-->\s*", "", html, count=1, flags=re.S)
 
 
-CARD = """      <div class="card">
-        <div class="card-head">
-          <div>
-            <div class="label">{name}</div>
-            <div class="desc">{desc}</div>
-          </div>
-          <button onclick="copySig('{sid}',this)">Copy signature</button>
-        </div>
-        <div class="stage"><div id="{sid}">
-{body}
-        </div></div>
+CARD = """    <article class="card">
+      <div class="bar">
+        <span class="name">{name}</span>
+        <span class="tag">{tag}</span>
+        <button type="button" onclick="copySig('{sid}',this)">COPY</button>
       </div>
+      <div class="stage"><div id="{sid}">
+{body}
+      </div></div>
+    </article>
 """
-
-SECTION = """    <section>
-      <h2>{title}{badge}</h2>
-      <p class="lede">{lede}</p>
-{cards}    </section>
-"""
-
-BADGE = ' <span class="badge">{}</span>'
 
 
 def main() -> None:
-    src_uri = icon_src()
     DIST.mkdir(exist_ok=True)
-    sections, n = [], 0
+    cards, n = [], 0
 
     for spec in SETS:
         out_dir = DIST / spec["id"]
         out_dir.mkdir(parents=True, exist_ok=True)
-        cards = []
+        tag = spec.get("note") or spec["title"]
 
-        for fname, name, desc in spec["variants"]:
+        for fname, name in spec["variants"]:
             raw = (SRC / spec["id"] / fname).read_text(encoding="utf-8")
-            built = raw.replace("__LI__", src_uri)
+            built = ASSET_RE.sub(lambda m: ASSET_BASE + m.group(1), raw)
             (out_dir / fname).write_text(built, encoding="utf-8")
             cards.append(CARD.format(
-                name=name, desc=desc, sid="sig%d" % n,
+                name=name, tag=tag, sid="sig%d" % n,
                 body=strip_leading_comment(built).rstrip(),
             ))
             n += 1
             print("wrote dist/%s/%s  (%d bytes)" % (spec["id"], fname, len(built)))
 
-        sections.append(SECTION.format(
-            title=spec["title"],
-            badge=BADGE.format(spec["badge"]) if spec.get("badge") else "",
-            lede=spec["lede"],
-            cards="".join(cards),
-        ))
-
     page = (ROOT / "page.template.html").read_text(encoding="utf-8")
-    page = page.replace("<!--SECTIONS-->", "".join(sections))
+    page = page.replace("<!--CARDS-->", "".join(cards))
+    page = page.replace("<!--COUNT-->", str(n))
+
+    if ASSET_RE.search(page):
+        raise SystemExit("unresolved __ASSET:__ token in output")
 
     (DIST / "preview.html").write_text(page, encoding="utf-8")
     (ROOT / "index.html").write_text(page, encoding="utf-8")
-    print("wrote dist/preview.html and index.html")
-    print("icon source: %s" % ("hosted URL" if HOSTED_ICON_URL else "embedded base64"))
+    print("wrote dist/preview.html and index.html  (%d designs)" % n)
 
 
 if __name__ == "__main__":
